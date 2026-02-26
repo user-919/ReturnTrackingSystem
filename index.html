@@ -1,0 +1,1461 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+  <title>Return Tracking System (Firebase Backend - No Storage)</title>
+  <style>
+    /* ===== Your original styles (kept) ===== */
+    * { box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+    body { margin:0; padding:0; background:#f5f7fa; font-size:14px; color:#333; }
+    .container { max-width:1200px; margin:0 auto; padding:20px; }
+
+    .login-container{ display:flex; justify-content:center; align-items:center; height:100vh;
+      background:linear-gradient(135deg,#6a11cb 0%,#2575fc 100%); }
+    .login-form{ background:#fff; padding:40px; border-radius:10px; box-shadow:0 10px 30px rgba(0,0,0,.2); width:400px; }
+    .login-form h2{ text-align:center; margin:0 0 30px; color:#333; font-weight:600; }
+
+    .form-group{ margin-bottom:20px; }
+    .form-group label{ display:block; margin-bottom:8px; font-weight:500; color:#555; }
+    .form-group input,.form-group select,.form-group textarea{
+      width:100%; padding:12px 15px; border:1px solid #ddd; border-radius:6px; font-size:14px; transition:border .3s;
+    }
+    .form-group input:focus,.form-group select:focus,.form-group textarea:focus{
+      border-color:#4a90e2; outline:none; box-shadow:0 0 0 2px rgba(74,144,226,.2);
+    }
+
+    .btn{ padding:12px 20px; border:none; border-radius:6px; cursor:pointer; font-size:14px; font-weight:500; transition:all .3s; }
+    .btn-primary{ background:#4a90e2; color:#fff; }
+    .btn-primary:hover{ background:#3a7bc8; transform:translateY(-2px); box-shadow:0 4px 8px rgba(0,0,0,.1); }
+
+    .app-container{ display:none; }
+
+    .header{ display:flex; justify-content:space-between; align-items:center; padding:15px 0; border-bottom:1px solid #e1e5eb; margin-bottom:25px; }
+    .header h1{ margin:0; color:#2c3e50; font-weight:600; }
+    .user-info{ display:flex; align-items:center; gap:15px; }
+    .user-role{ background:#4a90e2; color:#fff; padding:5px 10px; border-radius:15px; font-size:12px; font-weight:500; }
+    .logout-btn{ background:#6c757d; color:#fff; }
+    .logout-btn:hover{ background:#5a6268; }
+
+    .tabs{ display:flex; margin-bottom:25px; border-bottom:1px solid #e1e5eb; flex-wrap:wrap; }
+    .tab{ padding:12px 24px; cursor:pointer; border:1px solid transparent; border-bottom:none; border-radius:6px 6px 0 0;
+      margin-right:5px; font-weight:500; color:#6c757d; transition:all .3s; }
+    .tab.active{ background:#fff; border-color:#e1e5eb; border-bottom-color:#fff; color:#4a90e2; }
+    .tab:hover:not(.active){ background:#f8f9fa; color:#495057; }
+
+    .form-container{ background:#fff; padding:30px; border-radius:10px; box-shadow:0 4px 12px rgba(0,0,0,.05); margin-bottom:25px; }
+    .form-container h2{ margin-top:0; margin-bottom:25px; color:#2c3e50; font-weight:600; border-bottom:1px solid #eaeaea; padding-bottom:10px; }
+    .form-row{ display:flex; flex-wrap:wrap; margin:0 -15px; }
+    .form-col{ flex:1; padding:0 15px; min-width:250px; margin-bottom:20px; }
+    .form-actions{ display:flex; justify-content:flex-end; gap:15px; margin-top:25px; padding-top:20px; border-top:1px solid #eaeaea; }
+
+    .btn-success{ background:#28a745; color:#fff; }
+    .btn-success:hover{ background:#218838; transform:translateY(-2px); box-shadow:0 4px 8px rgba(0,0,0,.1); }
+    .btn-warning{ background:#ffc107; color:#212529; }
+    .btn-warning:hover{ background:#e0a800; }
+    .btn-danger{ background:#dc3545; color:#fff; }
+    .btn-danger:hover{ background:#c82333; }
+    .btn-info{ background:#17a2b8; color:#fff; }
+    .btn-info:hover{ background:#138496; }
+
+    .table-container{ background:#fff; border-radius:10px; box-shadow:0 4px 12px rgba(0,0,0,.05); overflow-x:auto; position:relative; }
+    table{ width:100%; border-collapse:collapse; min-width:1200px; }
+    th,td{ padding:15px; text-align:left; border-bottom:1px solid #eaeaea; }
+    th{ background:#f8f9fa; font-weight:600; color:#495057; }
+    tr:hover{ background:#f8f9fa; }
+
+    .checkbox-column{ width:40px; text-align:center; }
+    .select-all-row{ background:#e8f4fd; padding:10px 15px; display:flex; align-items:center; gap:15px; border-bottom:1px solid #b8daff; }
+    .select-all-row input[type="checkbox"]{ width:18px; height:18px; cursor:pointer; }
+    .batch-actions{ display:flex; gap:10px; margin-left:auto; }
+
+    .status-badge{ display:inline-flex; align-items:center; padding:6px 12px; border-radius:20px; font-size:12px; font-weight:600; }
+    .status-pending{ background:#fff3cd; color:#856404; }
+    .status-returned-dispose{ background:#f8d7da; color:#721c24; }
+    .status-send-account{ background:#e2d9f3; color:#38235c; }
+    .status-complete{ background:#d4edda; color:#155724; }
+    .warning-icon{ color:#dc3545; margin-right:5px; font-size:16px; }
+
+    .filters{ display:flex; justify-content:space-between; margin-bottom:20px; flex-wrap:wrap; gap:15px; }
+    .search-box{ flex:1; min-width:300px; }
+    .search-box input{ width:100%; padding:12px 15px; border:1px solid #ddd; border-radius:6px; font-size:14px; }
+    .status-filter{ display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
+    .status-filter select{ padding:12px 15px; border:1px solid #ddd; border-radius:6px; font-size:14px; min-width:180px; }
+
+    .modal{ display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,.5);
+      justify-content:center; align-items:center; z-index:1000; }
+    .modal-content{ background:#fff; padding:30px; border-radius:10px; width:500px; max-width:90%; max-height:90vh; overflow-y:auto;
+      box-shadow:0 10px 30px rgba(0,0,0,.2); }
+    .modal-header{ display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; }
+    .modal-title{ margin:0; font-size:20px; font-weight:600; color:#2c3e50; }
+    .close-btn{ background:none; border:none; font-size:24px; cursor:pointer; color:#6c757d; }
+    .modal-footer{ display:flex; justify-content:flex-end; gap:10px; margin-top:25px; }
+
+    .detail-modal{ width:700px; }
+    .detail-section{ margin-bottom:20px; padding-bottom:15px; border-bottom:1px solid #eaeaea; }
+    .detail-section:last-child{ border-bottom:none; }
+    .detail-section h4{ margin:0 0 10px; color:#4a90e2; font-weight:600; }
+    .detail-row{ display:flex; margin-bottom:8px; }
+    .detail-label{ font-weight:500; width:150px; color:#666; }
+    .detail-value{ flex:1; }
+
+    .contact-history{ margin-top:10px; border:1px solid #ddd; border-radius:6px; padding:10px; max-height:150px; overflow-y:auto; }
+    .contact-item{ padding:8px; border-bottom:1px solid #eee; font-size:13px; }
+    .contact-item:last-child{ border-bottom:none; }
+    .contact-date{ font-weight:600; color:#4a90e2; }
+
+    .export-section{ margin-top:20px; padding:25px; background:#fff; border-radius:10px; box-shadow:0 4px 12px rgba(0,0,0,.05); }
+    .export-section h3{ margin-top:0; margin-bottom:20px; color:#2c3e50; font-weight:600; }
+    .export-form{ display:flex; gap:15px; align-items:flex-end; flex-wrap:wrap; }
+    .export-form .form-group{ margin-bottom:0; flex:1; min-width:180px; }
+
+    .action-buttons{ display:flex; gap:8px; flex-wrap:wrap; }
+    .btn-sm{ padding:8px 12px; font-size:12px; }
+    .btn-secondary{ background:#6c757d; color:#fff; }
+    .btn-secondary:hover{ background:#5a6268; }
+
+    .attachment-link{ color:#4a90e2; text-decoration:none; font-size:13px; cursor:pointer; }
+    .attachment-link:hover{ text-decoration:underline; }
+
+    @media print{
+      body *{ visibility:hidden; }
+      #printSection,#printSection *{ visibility:visible; }
+      #printSection{ position:absolute; left:0; top:0; width:100%; background:#fff; padding:20px; font-family:Arial,sans-serif; }
+      .no-print{ display:none !important; }
+      .print-table{ width:100%; border-collapse:collapse; margin:20px 0; font-size:12px; }
+      .print-table th,.print-table td{ border:1px solid #333; padding:8px; text-align:left; }
+      .print-table th{ background:#f2f2f2; font-weight:bold; }
+      .print-header{ text-align:center; margin-bottom:30px; border-bottom:2px solid #333; padding-bottom:15px; }
+      .print-info{ margin-bottom:20px; padding:15px; background:#f9f9f9; border-radius:5px; border:1px solid #ddd; }
+      .print-info p{ margin:5px 0; }
+    }
+
+    @media (max-width:768px){
+      .form-col{ min-width:100%; }
+      .filters{ flex-direction:column; }
+      .search-box,.status-filter{ width:100%; }
+      .action-buttons{ flex-direction:column; }
+      .detail-modal{ width:95%; }
+      .detail-row{ flex-direction:column; }
+      .detail-label{ width:100%; margin-bottom:5px; }
+      .user-info{ flex-direction:column; gap:10px; align-items:flex-end; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Login Page -->
+  <div class="login-container" id="loginPage">
+    <div class="login-form">
+      <h2>Return Tracking System</h2>
+      <form id="loginForm">
+        <div class="form-group">
+          <label for="username">Username</label>
+          <input type="text" id="username">
+        </div>
+        <div class="form-group">
+          <label for="password">Password</label>
+          <input type="password" id="password" required />
+        </div>
+        <button type="submit" class="btn btn-primary" style="width:100%;">Login</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Main Application -->
+  <div class="app-container" id="appContainer">
+    <div class="container">
+      <div class="header">
+        <h1>Return Tracking System</h1>
+        <div class="user-info">
+          <span class="user-role" id="userRoleDisplay"></span>
+          <button class="btn logout-btn" id="logoutBtn">Logout</button>
+        </div>
+      </div>
+
+      <div class="tabs">
+        <div class="tab active" data-tab="entry">Data Entry</div>
+        <div class="tab" data-tab="records">Records</div>
+        <div class="tab" data-tab="export">Export</div>
+      </div>
+
+      <!-- Data Entry Tab -->
+      <div class="tab-content" id="entryTab">
+        <div class="form-container">
+          <h2>Return Item Information</h2>
+          <form id="entryForm">
+            <div class="form-row">
+              <div class="form-col">
+                <label for="rpoNumber">RPO NUMBER</label>
+                <input type="text" id="rpoNumber" required placeholder="Enter RPO number" />
+              </div>
+              <div class="form-col">
+                <label for="rpoDate">RPO DATE</label>
+                <input type="date" id="rpoDate" required />
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-col">
+                <label for="supplierName">SUPPLIER NAME</label>
+                <input type="text" id="supplierName" list="supplierList" required placeholder="Enter supplier name" />
+                <datalist id="supplierList"></datalist>
+              </div>
+              <div class="form-col">
+                <label for="departmentInCharge">DEPARTMENT IN-CHARGE</label>
+                <input type="text" id="departmentInCharge" list="deptList" required placeholder="Enter department" />
+                <datalist id="deptList"></datalist>
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-col">
+                <label for="contactDate">CONTACT DATE (Optional for first entry)</label>
+                <input type="date" id="contactDate" />
+                <small style="color:#6c757d;">First entry can be left blank</small>
+              </div>
+
+              <!-- ✅ No Firebase Storage: use attachment URL instead -->
+              <div class="form-col">
+                <label for="attachmentUrl">ATTACHMENT LINK (Google Drive / OneDrive / SharePoint)</label>
+                <input type="url" id="attachmentUrl" placeholder="Paste PDF link here (optional)" />
+                <small style="color:#6c757d;">No file upload. Store link only.</small>
+              </div>
+            </div>
+
+            <div class="form-actions">
+              <button type="button" class="btn btn-danger" id="cancelBtn">Cancel</button>
+              <button type="submit" class="btn btn-success" id="saveBtn">Save</button>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <!-- Records Tab -->
+      <div class="tab-content" id="recordsTab" style="display:none;">
+        <div class="filters">
+          <div class="search-box">
+            <input type="text" id="searchInput" placeholder="Search by RPO Number, Supplier Name, Department..." />
+          </div>
+          <div class="status-filter">
+            <select id="statusFilter">
+              <option value="all">All Status</option>
+              <option value="PENDING">PENDING</option>
+              <option value="RETURNED/DISPOSE">RETURNED/DISPOSE</option>
+              <option value="SEND ACCOUNT">SEND ACCOUNT</option>
+              <option value="COMPLETE">COMPLETE</option>
+              <option value="OVERDUE">Over 50 Days (Overdue)</option>
+            </select>
+            <select id="supplierFilter">
+              <option value="all">All Suppliers</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="select-all-row" id="batchActionsBar">
+          <input type="checkbox" id="selectAllCheckbox" />
+          <label for="selectAllCheckbox">Select All</label>
+          <div class="batch-actions">
+            <button class="btn btn-primary btn-sm" id="batchStatusBtn">Update Status</button>
+            <button class="btn btn-danger btn-sm" id="batchDeleteBtn">Delete Selected</button>
+          </div>
+        </div>
+
+        <div class="table-container">
+          <table id="recordsTable">
+            <thead>
+              <tr>
+                <th class="checkbox-column"><input type="checkbox" id="headerCheckbox" /></th>
+                <th>RPO NUMBER</th>
+                <th>RPO DATE</th>
+                <th>SUPPLIER NAME</th>
+                <th>DEPARTMENT IN-CHARGE</th>
+                <th>CONTACT DATE</th>
+                <th>STATUS</th>
+                <th>ATTACHMENT</th>
+                <th>ACTIONS</th>
+              </tr>
+            </thead>
+            <tbody id="recordsTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Export Tab -->
+      <div class="tab-content" id="exportTab" style="display:none;">
+        <div class="export-section">
+          <h3>Export Records to PDF</h3>
+          <div class="export-form">
+            <div class="form-group">
+              <label for="exportStartDate">Start Date (RPO Date)</label>
+              <input type="date" id="exportStartDate" />
+            </div>
+            <div class="form-group">
+              <label for="exportEndDate">End Date (RPO Date)</label>
+              <input type="date" id="exportEndDate" />
+            </div>
+            <div class="form-group">
+              <label for="exportStatus">Status</label>
+              <select id="exportStatus">
+                <option value="all">All Status</option>
+                <option value="PENDING">PENDING</option>
+                <option value="RETURNED/DISPOSE">RETURNED/DISPOSE</option>
+                <option value="SEND ACCOUNT">SEND ACCOUNT</option>
+                <option value="COMPLETE">COMPLETE</option>
+                <option value="OVERDUE">Over 50 Days (Overdue)</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="exportSupplier">Supplier Name</label>
+              <select id="exportSupplier">
+                <option value="all">All Suppliers</option>
+              </select>
+            </div>
+            <button class="btn btn-info" id="exportBtn">Export to PDF</button>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Hidden section for printing -->
+  <div id="printSection" style="display:none;"></div>
+
+  <!-- Remark Modal -->
+  <div class="modal" id="remarkModal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 class="modal-title">Remark</h3>
+        <button class="close-btn" id="closeRemarkModal">&times;</button>
+      </div>
+      <div class="form-group">
+        <textarea id="remarkText" rows="5" style="width:100%; padding:12px; border:1px solid #ddd; border-radius:6px;"></textarea>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-danger" id="cancelRemarkBtn">Cancel</button>
+        <button class="btn btn-success" id="saveRemarkBtn">Save</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Status Update Modal (Single) -->
+  <div class="modal" id="statusModal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 class="modal-title">Update Status</h3>
+        <button class="close-btn" id="closeStatusModal">&times;</button>
+      </div>
+      <div class="form-group">
+        <label for="statusSelect">Status</label>
+        <select id="statusSelect" style="width:100%; padding:12px; border:1px solid #ddd; border-radius:6px;">
+          <option value="PENDING">PENDING</option>
+          <option value="RETURNED/DISPOSE">RETURNED/DISPOSE</option>
+          <option value="SEND ACCOUNT">SEND ACCOUNT</option>
+          <option value="COMPLETE">COMPLETE</option>
+        </select>
+      </div>
+      <div class="form-group" id="contactDateGroup" style="display:none;">
+        <label for="newContactDate">Add CONTACT DATE</label>
+        <input type="date" id="newContactDate" style="width:100%; padding:12px; border:1px solid #ddd; border-radius:6px;">
+      </div>
+      <div class="form-group" id="returnedDateGroup" style="display:none;">
+        <label for="returnedDate">RETURNED/DISPOSE DATE</label>
+        <input type="date" id="returnedDate" style="width:100%; padding:12px; border:1px solid #ddd; border-radius:6px;">
+      </div>
+      <div class="form-group" id="sendAccountDateGroup" style="display:none;">
+        <label for="sendAccountDate">SEND ACCOUNT DATE</label>
+        <input type="date" id="sendAccountDate" style="width:100%; padding:12px; border:1px solid #ddd; border-radius:6px;">
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-danger" id="cancelStatusBtn">Cancel</button>
+        <button class="btn btn-success" id="updateStatusBtn">Update</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Batch Status Update Modal -->
+  <div class="modal" id="batchStatusModal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 class="modal-title">Batch Update Status</h3>
+        <button class="close-btn" id="closeBatchStatusModal">&times;</button>
+      </div>
+      <div class="form-group">
+        <label for="batchStatusSelect">Status</label>
+        <select id="batchStatusSelect" style="width:100%; padding:12px; border:1px solid #ddd; border-radius:6px;">
+          <option value="PENDING">PENDING</option>
+          <option value="RETURNED/DISPOSE">RETURNED/DISPOSE</option>
+          <option value="SEND ACCOUNT">SEND ACCOUNT</option>
+          <option value="COMPLETE">COMPLETE</option>
+        </select>
+      </div>
+      <div class="form-group" id="batchContactDateGroup" style="display:none;">
+        <label for="batchNewContactDate">Add CONTACT DATE</label>
+        <input type="date" id="batchNewContactDate" style="width:100%; padding:12px; border:1px solid #ddd; border-radius:6px;">
+      </div>
+      <div class="form-group" id="batchReturnedDateGroup" style="display:none;">
+        <label for="batchReturnedDate">RETURNED/DISPOSE DATE</label>
+        <input type="date" id="batchReturnedDate" style="width:100%; padding:12px; border:1px solid #ddd; border-radius:6px;">
+      </div>
+      <div class="form-group" id="batchSendAccountDateGroup" style="display:none;">
+        <label for="batchSendAccountDate">SEND ACCOUNT DATE</label>
+        <input type="date" id="batchSendAccountDate" style="width:100%; padding:12px; border:1px solid #ddd; border-radius:6px;">
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-danger" id="cancelBatchStatusBtn">Cancel</button>
+        <button class="btn btn-success" id="updateBatchStatusBtn">Update Selected</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Detail Modal -->
+  <div class="modal" id="detailModal">
+    <div class="modal-content detail-modal">
+      <div class="modal-header">
+        <h3 class="modal-title">Record Details</h3>
+        <button class="close-btn" id="closeDetailModal">&times;</button>
+      </div>
+      <div id="detailContent"></div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" id="closeDetailBtn">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Contact Date History Modal -->
+  <div class="modal" id="contactHistoryModal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 class="modal-title">Contact Date History</h3>
+        <button class="close-btn" id="closeHistoryModal">&times;</button>
+      </div>
+      <div id="contactHistoryList" style="max-height:400px; overflow-y:auto;"></div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" id="closeHistoryBtn">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <script type="module">
+    /* =========================================================
+       FIREBASE BACKEND (Auth + Firestore) - NO Storage
+       - Login: username only (lookup users collection to get email)
+       - Records: stored in Firestore collection "records"
+       - Attachment: store link only (attachmentUrl)
+    ========================================================== */
+
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-app.js";
+    import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-auth.js";
+    import {
+      getFirestore,
+      collection, query, where, getDocs,
+      doc, getDoc,
+      addDoc, updateDoc, deleteDoc,
+      orderBy, onSnapshot,
+      serverTimestamp
+    } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-firestore.js";
+
+    // ===== Your Firebase config =====
+    const firebaseConfig = {
+      apiKey: "AIzaSyA7eLIADN-uE53UzbMsrdrDPUZCVKulAoo",
+      authDomain: "returntrackingsystem.firebaseapp.com",
+      projectId: "returntrackingsystem",
+      storageBucket: "returntrackingsystem.firebasestorage.app",
+      messagingSenderId: "888642009283",
+      appId: "1:888642009283:web:f3ddb7478d0e865828ca76"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+
+    // ===== DOM Elements =====
+    const loginPage = document.getElementById('loginPage');
+    const appContainer = document.getElementById('appContainer');
+    const loginForm = document.getElementById('loginForm');
+    const logoutBtn = document.getElementById('logoutBtn');
+    const userRoleDisplay = document.getElementById('userRoleDisplay');
+    const tabs = document.querySelectorAll('.tab');
+    const tabContents = document.querySelectorAll('.tab-content');
+
+    const entryForm = document.getElementById('entryForm');
+    const saveBtn = document.getElementById('saveBtn');
+    const cancelBtn = document.getElementById('cancelBtn');
+
+    const searchInput = document.getElementById('searchInput');
+    const statusFilter = document.getElementById('statusFilter');
+    const supplierFilter = document.getElementById('supplierFilter');
+    const recordsTableBody = document.getElementById('recordsTableBody');
+
+    const exportBtn = document.getElementById('exportBtn');
+    const exportSupplier = document.getElementById('exportSupplier');
+    const exportStartDate = document.getElementById('exportStartDate');
+    const exportEndDate = document.getElementById('exportEndDate');
+    const exportStatus = document.getElementById('exportStatus');
+
+    const supplierList = document.getElementById('supplierList');
+    const deptList = document.getElementById('deptList');
+
+    const remarkModal = document.getElementById('remarkModal');
+    const closeRemarkModal = document.getElementById('closeRemarkModal');
+    const cancelRemarkBtn = document.getElementById('cancelRemarkBtn');
+    const saveRemarkBtn = document.getElementById('saveRemarkBtn');
+    const remarkText = document.getElementById('remarkText');
+
+    const statusModal = document.getElementById('statusModal');
+    const closeStatusModal = document.getElementById('closeStatusModal');
+    const cancelStatusBtn = document.getElementById('cancelStatusBtn');
+    const updateStatusBtn = document.getElementById('updateStatusBtn');
+    const statusSelect = document.getElementById('statusSelect');
+    const contactDateGroup = document.getElementById('contactDateGroup');
+    const newContactDate = document.getElementById('newContactDate');
+    const returnedDateGroup = document.getElementById('returnedDateGroup');
+    const sendAccountDateGroup = document.getElementById('sendAccountDateGroup');
+    const returnedDate = document.getElementById('returnedDate');
+    const sendAccountDate = document.getElementById('sendAccountDate');
+
+    const detailModal = document.getElementById('detailModal');
+    const closeDetailModal = document.getElementById('closeDetailModal');
+    const closeDetailBtn = document.getElementById('closeDetailBtn');
+    const detailContent = document.getElementById('detailContent');
+
+    const contactHistoryModal = document.getElementById('contactHistoryModal');
+    const closeHistoryModal = document.getElementById('closeHistoryModal');
+    const closeHistoryBtn = document.getElementById('closeHistoryBtn');
+    const contactHistoryList = document.getElementById('contactHistoryList');
+
+    const printSection = document.getElementById('printSection');
+
+    // Batch operation elements
+    const selectAllCheckbox = document.getElementById('selectAllCheckbox');
+    const headerCheckbox = document.getElementById('headerCheckbox');
+    const batchStatusBtn = document.getElementById('batchStatusBtn');
+    const batchDeleteBtn = document.getElementById('batchDeleteBtn');
+    const batchStatusModal = document.getElementById('batchStatusModal');
+    const closeBatchStatusModal = document.getElementById('closeBatchStatusModal');
+    const cancelBatchStatusBtn = document.getElementById('cancelBatchStatusBtn');
+    const updateBatchStatusBtn = document.getElementById('updateBatchStatusBtn');
+    const batchStatusSelect = document.getElementById('batchStatusSelect');
+    const batchContactDateGroup = document.getElementById('batchContactDateGroup');
+    const batchNewContactDate = document.getElementById('batchNewContactDate');
+    const batchReturnedDateGroup = document.getElementById('batchReturnedDateGroup');
+    const batchReturnedDate = document.getElementById('batchReturnedDate');
+    const batchSendAccountDateGroup = document.getElementById('batchSendAccountDateGroup');
+    const batchSendAccountDate = document.getElementById('batchSendAccountDate');
+
+    // ===== App state =====
+    const state = {
+      currentUser: null,        // username
+      currentUserRole: null,    // role string
+      permissions: null,        // computed permissions
+      records: [],              // records loaded from Firestore
+      suppliers: [],
+      departments: ["IT Department", "Procurement", "Logistics", "HR Department", "Finance"],
+      editingRecordId: null,    // Firestore doc id
+      currentRemarkRecordId: null,
+      currentStatusRecordId: null,
+      currentDetailRecordId: null,
+      selectedRecordIds: [],
+      unsubscribeRecords: null  // snapshot unsubscribe
+    };
+
+    // ===== Permission model =====
+    function permissionsFromRole(role) {
+      // Adjust as you like
+      if (role === "ic" || role === "Administrator") {
+        return { canEdit:true, canAdd:true, canDelete:true, canUpdateStatus:true, canView:true, canExport:true };
+      }
+      if (role === "receiving" || role === "Receiving") {
+        return { canEdit:true, canAdd:true, canDelete:true, canUpdateStatus:true, canView:true, canExport:true };
+      }
+      // view-only default
+      return { canEdit:false, canAdd:false, canDelete:false, canUpdateStatus:false, canView:true, canExport:true };
+    }
+
+    // ===== Helper =====
+    const todayISO = () => new Date().toISOString().split("T")[0];
+    const safeText = (s) => (s ?? "").toString();
+
+    // ===== UI Show/Hide =====
+    function showApp() {
+      loginPage.style.display = 'none';
+      appContainer.style.display = 'block';
+
+      userRoleDisplay.textContent = `${state.currentUserRole || "Unknown"}`;
+
+      applyUserPermissions();
+      populateLists();
+      renderRecordsTable();
+
+      document.getElementById('rpoDate').value = todayISO();
+    }
+
+    function showLogin() {
+      loginPage.style.display = 'flex';
+      appContainer.style.display = 'none';
+      state.currentUser = null;
+      state.currentUserRole = null;
+      state.permissions = null;
+      state.records = [];
+      if (state.unsubscribeRecords) {
+        state.unsubscribeRecords();
+        state.unsubscribeRecords = null;
+      }
+    }
+
+    function applyUserPermissions() {
+      const p = state.permissions || permissionsFromRole(state.currentUserRole);
+      state.permissions = p;
+
+      // Tabs
+      const entryTabBtn = document.querySelector('.tab[data-tab="entry"]');
+      const exportTabBtn = document.querySelector('.tab[data-tab="export"]');
+
+      if (!p.canAdd) {
+        entryTabBtn.style.display = 'none';
+        if (entryTabBtn.classList.contains('active')) {
+          document.querySelector('.tab[data-tab="records"]').click();
+        }
+      } else {
+        entryTabBtn.style.display = 'block';
+      }
+
+      exportTabBtn.style.display = p.canExport ? 'block' : 'none';
+
+      // Batch actions
+      const bar = document.getElementById('batchActionsBar');
+      if (!p.canDelete && !p.canUpdateStatus) bar.style.display = 'none';
+      else bar.style.display = 'flex';
+    }
+
+    // ===== Tab navigation =====
+    tabs.forEach(tab => {
+      tab.addEventListener('click', function() {
+        const tabName = this.getAttribute('data-tab');
+
+        tabs.forEach(t => t.classList.remove('active'));
+        this.classList.add('active');
+
+        tabContents.forEach(content => content.style.display = 'none');
+        document.getElementById(tabName + 'Tab').style.display = 'block';
+
+        if (tabName === 'records') renderRecordsTable();
+        if (tabName === 'export') populateExportSupplierFilter();
+      });
+    });
+
+    // ===== Firebase Auth: Username-only login =====
+    loginForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const usernameInput = document.getElementById('username').value.trim();
+      const password = document.getElementById('password').value;
+
+      try {
+        // Lookup user by username in Firestore collection "users"
+        // Expected: users docs include { username, email, role }
+        const q = query(collection(db, "users"), where("username", "==", usernameInput));
+        const snap = await getDocs(q);
+
+        if (snap.empty) {
+          alert("Username not found in Firestore (users collection).");
+          return;
+        }
+
+        const userData = snap.docs[0].data();
+        const email = userData.email;
+
+        if (!email) {
+          alert("This username has no email in Firestore.");
+          return;
+        }
+
+        await signInWithEmailAndPassword(auth, email, password);
+      } catch (err) {
+        alert(err.message);
+      }
+    });
+
+    logoutBtn.addEventListener('click', async () => {
+      await signOut(auth);
+    });
+
+    // ===== Auth state =====
+    onAuthStateChanged(auth, async (user) => {
+      if (!user) {
+        showLogin();
+        return;
+      }
+
+      // Load role/username from users/{uid}
+      // This is recommended so the role is always correct for this account.
+      try {
+        const userDoc = await getDoc(doc(db, "users", user.uid));
+        if (!userDoc.exists()) {
+          alert("No users/{uid} profile found. Please create it in Firestore.");
+          await signOut(auth);
+          return;
+        }
+
+        const data = userDoc.data();
+        state.currentUser = data.username || (user.email ? user.email.split("@")[0] : "user");
+        state.currentUserRole = data.role || "view";
+        state.permissions = permissionsFromRole(state.currentUserRole);
+
+        // Start listening records
+        startRecordsListener();
+
+        showApp();
+      } catch (err) {
+        alert("Failed to load profile: " + err.message);
+        await signOut(auth);
+      }
+    });
+
+    // ===== Firestore: Records realtime =====
+    function startRecordsListener() {
+      if (state.unsubscribeRecords) state.unsubscribeRecords();
+
+      const recQ = query(collection(db, "records"), orderBy("entryDate", "desc"));
+
+      state.unsubscribeRecords = onSnapshot(recQ, (snap) => {
+        const rows = [];
+        const supplierSet = new Set();
+
+        snap.forEach((d) => {
+          const r = d.data();
+          rows.push({
+            id: d.id,
+            rpoNumber: safeText(r.rpoNumber),
+            rpoDate: safeText(r.rpoDate),
+            supplierName: safeText(r.supplierName),
+            departmentInCharge: safeText(r.departmentInCharge),
+            contactDates: Array.isArray(r.contactDates) ? r.contactDates : [],
+            status: safeText(r.status || "PENDING"),
+            remark: safeText(r.remark || ""),
+            attachmentUrl: safeText(r.attachmentUrl || ""),
+            returnedDate: r.returnedDate || null,
+            sendAccountDate: r.sendAccountDate || null,
+            enteredBy: safeText(r.enteredBy || ""),
+            entryDate: r.entryDate || null,
+            updatedDate: r.updatedDate || null,
+          });
+
+          if (r.supplierName) supplierSet.add(r.supplierName);
+        });
+
+        state.records = rows;
+        state.suppliers = Array.from(supplierSet).sort((a,b)=>a.localeCompare(b));
+
+        populateLists();
+        renderRecordsTable();
+      }, (err) => {
+        alert("Failed to load records: " + err.message);
+      });
+    }
+
+    // ===== Populate datalists / filters =====
+    function populateLists() {
+      supplierList.innerHTML = '';
+      deptList.innerHTML = '';
+
+      state.suppliers.forEach(supplier => {
+        const opt = document.createElement('option');
+        opt.value = supplier;
+        supplierList.appendChild(opt);
+      });
+
+      state.departments.forEach(dept => {
+        const opt = document.createElement('option');
+        opt.value = dept;
+        deptList.appendChild(opt);
+      });
+
+      populateSupplierFilter();
+    }
+
+    function populateSupplierFilter() {
+      supplierFilter.innerHTML = '<option value="all">All Suppliers</option>';
+      state.suppliers.forEach(supplier => {
+        const option = document.createElement('option');
+        option.value = supplier;
+        option.textContent = supplier;
+        supplierFilter.appendChild(option);
+      });
+    }
+
+    function populateExportSupplierFilter() {
+      exportSupplier.innerHTML = '<option value="all">All Suppliers</option>';
+      state.suppliers.forEach(supplier => {
+        const option = document.createElement('option');
+        option.value = supplier;
+        option.textContent = supplier;
+        exportSupplier.appendChild(option);
+      });
+    }
+
+    // ===== Entry form: Add / Edit record =====
+    entryForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const p = state.permissions || permissionsFromRole(state.currentUserRole);
+      if (!p.canAdd && !state.editingRecordId) { alert('No permission to add records.'); return; }
+      if (!p.canEdit && state.editingRecordId) { alert('No permission to edit records.'); return; }
+
+      const contactDate = document.getElementById('contactDate').value;
+      const attachmentUrl = document.getElementById('attachmentUrl').value.trim();
+
+      try {
+        if (state.editingRecordId) {
+          // Update existing record
+          const existing = state.records.find(r => r.id === state.editingRecordId);
+          const contactDates = existing ? [...(existing.contactDates || [])] : [];
+
+          if (contactDate) contactDates.push(contactDate);
+
+          await updateDoc(doc(db, "records", state.editingRecordId), {
+            rpoNumber: document.getElementById('rpoNumber').value.toUpperCase(),
+            rpoDate: document.getElementById('rpoDate').value,
+            supplierName: document.getElementById('supplierName').value,
+            departmentInCharge: document.getElementById('departmentInCharge').value,
+            contactDates,
+            attachmentUrl: attachmentUrl || (existing ? existing.attachmentUrl : ""),
+            updatedDate: serverTimestamp(),
+          });
+
+          state.editingRecordId = null;
+          saveBtn.textContent = 'Save';
+        } else {
+          // Add new record
+          const contactDates = [];
+          if (contactDate) contactDates.push(contactDate);
+
+          await addDoc(collection(db, "records"), {
+            rpoNumber: document.getElementById('rpoNumber').value.toUpperCase(),
+            rpoDate: document.getElementById('rpoDate').value,
+            supplierName: document.getElementById('supplierName').value,
+            departmentInCharge: document.getElementById('departmentInCharge').value,
+            contactDates,
+            status: "PENDING",
+            remark: "",
+            attachmentUrl: attachmentUrl || "",
+            returnedDate: null,
+            sendAccountDate: null,
+            enteredBy: state.currentUser || "",
+            entryDate: serverTimestamp(),
+            updatedDate: serverTimestamp(),
+          });
+        }
+
+        entryForm.reset();
+        document.getElementById('rpoDate').value = todayISO();
+
+        alert('Record saved successfully!');
+        document.querySelector('.tab[data-tab="records"]').click();
+      } catch (err) {
+        alert("Save failed: " + err.message);
+      }
+    });
+
+    cancelBtn.addEventListener('click', () => {
+      entryForm.reset();
+      state.editingRecordId = null;
+      saveBtn.textContent = 'Save';
+      document.getElementById('rpoDate').value = todayISO();
+    });
+
+    // ===== Search & filter =====
+    searchInput.addEventListener('input', renderRecordsTable);
+    statusFilter.addEventListener('change', renderRecordsTable);
+    supplierFilter.addEventListener('change', renderRecordsTable);
+
+    // ===== Checkbox selection =====
+    selectAllCheckbox.addEventListener('change', function() {
+      document.querySelectorAll('.record-checkbox').forEach(cb => cb.checked = this.checked);
+      headerCheckbox.checked = this.checked;
+      updateSelectedIds();
+    });
+
+    headerCheckbox.addEventListener('change', function() {
+      selectAllCheckbox.checked = this.checked;
+      document.querySelectorAll('.record-checkbox').forEach(cb => cb.checked = this.checked);
+      updateSelectedIds();
+    });
+
+    function updateSelectedIds() {
+      state.selectedRecordIds = [];
+      document.querySelectorAll('.record-checkbox:checked').forEach(cb => {
+        state.selectedRecordIds.push(cb.getAttribute('data-id'));
+      });
+    }
+
+    // ===== Batch Status =====
+    batchStatusBtn.addEventListener('click', () => {
+      if (state.selectedRecordIds.length === 0) { alert('Please select at least one record.'); return; }
+      batchNewContactDate.value = todayISO();
+      batchReturnedDate.value = todayISO();
+      batchSendAccountDate.value = todayISO();
+      batchStatusModal.style.display = 'flex';
+    });
+
+    batchStatusSelect.addEventListener('change', function() {
+      batchContactDateGroup.style.display = this.value === 'PENDING' ? 'block' : 'none';
+      batchReturnedDateGroup.style.display = this.value === 'RETURNED/DISPOSE' ? 'block' : 'none';
+      batchSendAccountDateGroup.style.display = this.value === 'SEND ACCOUNT' ? 'block' : 'none';
+    });
+
+    updateBatchStatusBtn.addEventListener('click', async () => {
+      const p = state.permissions || permissionsFromRole(state.currentUserRole);
+      if (!p.canUpdateStatus) { alert('No permission to update status.'); batchStatusModal.style.display='none'; return; }
+
+      const newStatus = batchStatusSelect.value;
+      let updatedCount = 0;
+
+      try {
+        for (const id of state.selectedRecordIds) {
+          const record = state.records.find(r => r.id === id);
+          if (!record) continue;
+
+          const updates = { updatedDate: serverTimestamp() };
+
+          // Contact date append
+          if (newStatus === 'PENDING' && batchNewContactDate.value) {
+            const cd = Array.isArray(record.contactDates) ? [...record.contactDates] : [];
+            cd.push(batchNewContactDate.value);
+            updates.contactDates = cd;
+            updates.status = 'PENDING';
+          }
+
+          // Returned date
+          if (newStatus === 'RETURNED/DISPOSE' && batchReturnedDate.value) {
+            updates.returnedDate = batchReturnedDate.value;
+            updates.status = 'RETURNED/DISPOSE';
+          }
+
+          // Send account -> auto COMPLETE
+          if (newStatus === 'SEND ACCOUNT' && batchSendAccountDate.value) {
+            updates.sendAccountDate = batchSendAccountDate.value;
+            updates.status = 'COMPLETE';
+          }
+
+          if (newStatus === 'COMPLETE') {
+            updates.status = 'COMPLETE';
+          }
+
+          await updateDoc(doc(db, "records", id), updates);
+          updatedCount++;
+        }
+
+        alert(`Successfully updated ${updatedCount} record(s).`);
+      } catch (err) {
+        alert("Batch update failed: " + err.message);
+      } finally {
+        batchStatusModal.style.display = 'none';
+        selectAllCheckbox.checked = false;
+        headerCheckbox.checked = false;
+        state.selectedRecordIds = [];
+      }
+    });
+
+    // ===== Batch Delete =====
+    batchDeleteBtn.addEventListener('click', async () => {
+      if (state.selectedRecordIds.length === 0) { alert('Please select at least one record.'); return; }
+
+      const p = state.permissions || permissionsFromRole(state.currentUserRole);
+      if (!p.canDelete) { alert('No permission to delete.'); return; }
+
+      if (!confirm(`Are you sure you want to delete ${state.selectedRecordIds.length} selected record(s)?`)) return;
+
+      try {
+        for (const id of state.selectedRecordIds) {
+          await deleteDoc(doc(db, "records", id));
+        }
+      } catch (err) {
+        alert("Batch delete failed: " + err.message);
+      } finally {
+        selectAllCheckbox.checked = false;
+        headerCheckbox.checked = false;
+        state.selectedRecordIds = [];
+      }
+    });
+
+    closeBatchStatusModal.addEventListener('click', () => batchStatusModal.style.display = 'none');
+    cancelBatchStatusBtn.addEventListener('click', () => batchStatusModal.style.display = 'none');
+
+    // ===== Remark modal =====
+    closeRemarkModal.addEventListener('click', () => remarkModal.style.display = 'none');
+    cancelRemarkBtn.addEventListener('click', () => remarkModal.style.display = 'none');
+
+    saveRemarkBtn.addEventListener('click', async () => {
+      const p = state.permissions || permissionsFromRole(state.currentUserRole);
+      if (!p.canEdit) { alert('No permission to edit remarks.'); remarkModal.style.display='none'; return; }
+
+      if (!state.currentRemarkRecordId) return;
+
+      try {
+        await updateDoc(doc(db, "records", state.currentRemarkRecordId), {
+          remark: remarkText.value,
+          updatedDate: serverTimestamp()
+        });
+      } catch (err) {
+        alert("Save remark failed: " + err.message);
+      } finally {
+        remarkModal.style.display = 'none';
+        state.currentRemarkRecordId = null;
+      }
+    });
+
+    // ===== Status modal (single) =====
+    closeStatusModal.addEventListener('click', () => statusModal.style.display = 'none');
+    cancelStatusBtn.addEventListener('click', () => statusModal.style.display = 'none');
+
+    statusSelect.addEventListener('change', function() {
+      contactDateGroup.style.display = this.value === 'PENDING' ? 'block' : 'none';
+      returnedDateGroup.style.display = this.value === 'RETURNED/DISPOSE' ? 'block' : 'none';
+      sendAccountDateGroup.style.display = this.value === 'SEND ACCOUNT' ? 'block' : 'none';
+
+      if (this.value === 'PENDING') newContactDate.value = todayISO();
+      if (this.value === 'RETURNED/DISPOSE') returnedDate.value = todayISO();
+      if (this.value === 'SEND ACCOUNT') sendAccountDate.value = todayISO();
+    });
+
+    updateStatusBtn.addEventListener('click', async () => {
+      const p = state.permissions || permissionsFromRole(state.currentUserRole);
+      if (!p.canUpdateStatus) { alert('No permission to update status.'); statusModal.style.display='none'; return; }
+      if (!state.currentStatusRecordId) return;
+
+      const record = state.records.find(r => r.id === state.currentStatusRecordId);
+      if (!record) return;
+
+      try {
+        let newStatus = statusSelect.value;
+        const updates = { updatedDate: serverTimestamp() };
+
+        if (newStatus === 'PENDING' && newContactDate.value) {
+          const cd = Array.isArray(record.contactDates) ? [...record.contactDates] : [];
+          cd.push(newContactDate.value);
+          updates.contactDates = cd;
+          updates.status = 'PENDING';
+        }
+
+        if (newStatus === 'RETURNED/DISPOSE' && returnedDate.value) {
+          updates.returnedDate = returnedDate.value;
+          updates.status = 'RETURNED/DISPOSE';
+        }
+
+        if (newStatus === 'SEND ACCOUNT' && sendAccountDate.value) {
+          updates.sendAccountDate = sendAccountDate.value;
+          updates.status = 'COMPLETE';
+          alert('Status automatically changed to COMPLETE when SEND ACCOUNT is selected.');
+        }
+
+        if (newStatus === 'COMPLETE') updates.status = 'COMPLETE';
+
+        await updateDoc(doc(db, "records", state.currentStatusRecordId), updates);
+      } catch (err) {
+        alert("Update status failed: " + err.message);
+      } finally {
+        statusModal.style.display = 'none';
+        state.currentStatusRecordId = null;
+      }
+    });
+
+    // ===== Detail / History modals =====
+    closeDetailModal.addEventListener('click', () => detailModal.style.display = 'none');
+    closeDetailBtn.addEventListener('click', () => detailModal.style.display = 'none');
+
+    closeHistoryModal.addEventListener('click', () => contactHistoryModal.style.display = 'none');
+    closeHistoryBtn.addEventListener('click', () => contactHistoryModal.style.display = 'none');
+
+    function showRemarkModal(recordId) {
+      const record = state.records.find(r => r.id === recordId);
+      if (!record) return;
+      remarkText.value = record.remark || '';
+      state.currentRemarkRecordId = recordId;
+      remarkModal.style.display = 'flex';
+    }
+
+    function showStatusModal(recordId) {
+      const record = state.records.find(r => r.id === recordId);
+      if (!record) return;
+
+      statusSelect.value = record.status || 'PENDING';
+      newContactDate.value = todayISO();
+      returnedDate.value = record.returnedDate || todayISO();
+      sendAccountDate.value = record.sendAccountDate || todayISO();
+
+      contactDateGroup.style.display = record.status === 'PENDING' ? 'block' : 'none';
+      returnedDateGroup.style.display = record.status === 'RETURNED/DISPOSE' ? 'block' : 'none';
+      sendAccountDateGroup.style.display = record.status === 'SEND ACCOUNT' ? 'block' : 'none';
+
+      state.currentStatusRecordId = recordId;
+      statusModal.style.display = 'flex';
+    }
+
+    function showContactHistory(recordId) {
+      const record = state.records.find(r => r.id === recordId);
+      if (!record || !record.contactDates || record.contactDates.length === 0) return;
+
+      let html = '';
+      record.contactDates.forEach((date, idx) => {
+        html += `<div style="padding:10px; border-bottom:1px solid #eee;">
+                  <strong>Contact #${idx + 1}:</strong> ${date}
+                 </div>`;
+      });
+      contactHistoryList.innerHTML = html;
+      contactHistoryModal.style.display = 'flex';
+    }
+
+    function showDetailModal(recordId) {
+      const record = state.records.find(r => r.id === recordId);
+      if (!record) return;
+
+      const rpoDate = new Date(record.rpoDate);
+      const today = new Date();
+      const daysDiff = Math.floor((today - rpoDate) / (1000 * 60 * 60 * 24));
+      const isOver50Days = daysDiff > 50;
+
+      let statusClass = (record.status || 'PENDING').toLowerCase().replace('/', '-').replace(' ', '-');
+      if (record.status === 'RETURNED/DISPOSE') statusClass = 'returned-dispose';
+
+      let statusHtml = `<span class="status-badge status-${statusClass}">`;
+      if (isOver50Days && record.status === 'PENDING') statusHtml += '<span class="warning-icon">⚠️</span>';
+      statusHtml += (record.status || 'PENDING') + '</span>';
+
+      let contactDatesHtml = '';
+      if (record.contactDates && record.contactDates.length > 0) {
+        contactDatesHtml = '<div class="contact-history">';
+        record.contactDates.forEach((date, index) => {
+          contactDatesHtml += `<div class="contact-item"><span class="contact-date">Contact #${index + 1}:</span> ${date}</div>`;
+        });
+        contactDatesHtml += '</div>';
+      } else {
+        contactDatesHtml = '<p>No contact dates recorded</p>';
+      }
+
+      detailContent.innerHTML = `
+        <div class="detail-section">
+          <h4>Basic Information</h4>
+          <div class="detail-row"><div class="detail-label">RPO NUMBER</div><div class="detail-value">${record.rpoNumber}</div></div>
+          <div class="detail-row"><div class="detail-label">RPO DATE</div><div class="detail-value">${record.rpoDate}</div></div>
+          <div class="detail-row"><div class="detail-label">SUPPLIER NAME</div><div class="detail-value">${record.supplierName}</div></div>
+          <div class="detail-row"><div class="detail-label">DEPARTMENT</div><div class="detail-value">${record.departmentInCharge}</div></div>
+        </div>
+
+        <div class="detail-section">
+          <h4>Contact History</h4>
+          ${contactDatesHtml}
+        </div>
+
+        <div class="detail-section">
+          <h4>Status Information</h4>
+          <div class="detail-row"><div class="detail-label">STATUS</div><div class="detail-value">${statusHtml}</div></div>
+          <div class="detail-row"><div class="detail-label">RETURNED/DISPOSE</div><div class="detail-value">${record.returnedDate || 'Not set'}</div></div>
+          <div class="detail-row"><div class="detail-label">SEND ACCOUNT</div><div class="detail-value">${record.sendAccountDate || 'Not set'}</div></div>
+        </div>
+
+        <div class="detail-section">
+          <h4>User Information</h4>
+          <div class="detail-row"><div class="detail-label">ENTERED BY</div><div class="detail-value">${record.enteredBy || '-'}</div></div>
+        </div>
+
+        <div class="detail-section">
+          <h4>Attachment</h4>
+          <div class="detail-row">
+            <div class="detail-label">LINK</div>
+            <div class="detail-value">
+              ${record.attachmentUrl ? `<a href="${record.attachmentUrl}" target="_blank" class="attachment-link">Open Attachment</a>` : 'No attachment'}
+            </div>
+          </div>
+        </div>
+
+        <div class="detail-section">
+          <h4>Remark</h4>
+          <div class="detail-row"><div class="detail-value">${record.remark || 'No remark added'}</div></div>
+        </div>
+
+        ${(isOver50Days && record.status === 'PENDING') ? `
+          <div class="detail-section">
+            <h4 style="color:#dc3545;">⚠️ Warning</h4>
+            <div class="detail-row">
+              <div class="detail-value" style="color:#dc3545;">
+                This record has been pending for ${daysDiff} days (based on RPO Date), which exceeds the 50-day threshold.
+              </div>
+            </div>
+          </div>
+        ` : ''}
+      `;
+
+      detailModal.style.display = 'flex';
+    }
+
+    // ===== Edit / Delete =====
+    function editRecord(recordId) {
+      const p = state.permissions || permissionsFromRole(state.currentUserRole);
+      if (!p.canEdit) { alert('No permission to edit.'); return; }
+
+      const record = state.records.find(r => r.id === recordId);
+      if (!record) return;
+
+      document.getElementById('rpoNumber').value = record.rpoNumber;
+      document.getElementById('rpoDate').value = record.rpoDate;
+      document.getElementById('supplierName').value = record.supplierName;
+      document.getElementById('departmentInCharge').value = record.departmentInCharge;
+      document.getElementById('contactDate').value = '';
+      document.getElementById('attachmentUrl').value = record.attachmentUrl || '';
+
+      state.editingRecordId = recordId;
+      saveBtn.textContent = 'Update';
+
+      document.querySelector('.tab[data-tab="entry"]').click();
+    }
+
+    async function deleteRecord(recordId) {
+      const p = state.permissions || permissionsFromRole(state.currentUserRole);
+      if (!p.canDelete) { alert('No permission to delete.'); return; }
+
+      try {
+        await deleteDoc(doc(db, "records", recordId));
+      } catch (err) {
+        alert("Delete failed: " + err.message);
+      }
+    }
+
+    // ===== Render table =====
+    function renderRecordsTable() {
+      const term = searchInput.value.toLowerCase();
+      const statusVal = statusFilter.value;
+      const supplierVal = supplierFilter.value;
+
+      let filtered = [...state.records];
+
+      if (term) {
+        filtered = filtered.filter(r =>
+          r.rpoNumber.toLowerCase().includes(term) ||
+          r.supplierName.toLowerCase().includes(term) ||
+          r.departmentInCharge.toLowerCase().includes(term)
+        );
+      }
+
+      if (supplierVal !== 'all') {
+        filtered = filtered.filter(r => r.supplierName === supplierVal);
+      }
+
+      if (statusVal !== 'all') {
+        if (statusVal === 'OVERDUE') {
+          const today = new Date();
+          filtered = filtered.filter(r => {
+            if (r.status !== 'PENDING') return false;
+            const d = new Date(r.rpoDate);
+            const days = Math.floor((today - d) / (1000 * 60 * 60 * 24));
+            return days > 50;
+          });
+        } else {
+          filtered = filtered.filter(r => r.status === statusVal);
+        }
+      }
+
+      recordsTableBody.innerHTML = '';
+
+      const p = state.permissions || permissionsFromRole(state.currentUserRole);
+
+      filtered.forEach(record => {
+        const row = document.createElement('tr');
+
+        const rpoDate = new Date(record.rpoDate);
+        const today = new Date();
+        const daysDiff = Math.floor((today - rpoDate) / (1000 * 60 * 60 * 24));
+        const isOver50Days = daysDiff > 50;
+
+        const latestContactDate = (record.contactDates && record.contactDates.length > 0)
+          ? record.contactDates[record.contactDates.length - 1]
+          : '-';
+
+        let statusClass = record.status.toLowerCase().replace('/', '-').replace(' ', '-');
+        if (record.status === 'RETURNED/DISPOSE') statusClass = 'returned-dispose';
+
+        let statusHtml = `<span class="status-badge status-${statusClass}">`;
+        if (isOver50Days && record.status === 'PENDING') statusHtml += '<span class="warning-icon">⚠️</span>';
+        statusHtml += record.status + '</span>';
+
+        let attachmentHtml = '-';
+        if (record.attachmentUrl) {
+          attachmentHtml = `<a href="${record.attachmentUrl}" class="attachment-link" target="_blank">Open</a>`;
+        }
+
+        let actionsHtml = `<div class="action-buttons">
+            <button class="btn btn-secondary btn-sm detail-btn" data-id="${record.id}">Detail</button>`;
+
+        if (p.canEdit) actionsHtml += `<button class="btn btn-warning btn-sm edit-btn" data-id="${record.id}">Edit</button>`;
+        if (p.canDelete) actionsHtml += `<button class="btn btn-danger btn-sm delete-btn" data-id="${record.id}">Delete</button>`;
+        if (p.canEdit) actionsHtml += `<button class="btn btn-info btn-sm remark-btn" data-id="${record.id}">Remark</button>`;
+        if (p.canUpdateStatus) actionsHtml += `<button class="btn btn-primary btn-sm status-btn" data-id="${record.id}">Status</button>`;
+        if (record.contactDates && record.contactDates.length > 0) actionsHtml += `<button class="btn btn-secondary btn-sm history-btn" data-id="${record.id}">History</button>`;
+        actionsHtml += `</div>`;
+
+        row.innerHTML = `
+          <td class="checkbox-column"><input type="checkbox" class="record-checkbox" data-id="${record.id}"></td>
+          <td>${record.rpoNumber}</td>
+          <td>${record.rpoDate}</td>
+          <td>${record.supplierName}</td>
+          <td>${record.departmentInCharge}</td>
+          <td>${latestContactDate}</td>
+          <td>${statusHtml}</td>
+          <td>${attachmentHtml}</td>
+          <td>${actionsHtml}</td>
+        `;
+
+        recordsTableBody.appendChild(row);
+      });
+
+      // checkbox listeners
+      document.querySelectorAll('.record-checkbox').forEach(cb => {
+        cb.addEventListener('change', () => {
+          updateSelectedIds();
+          const total = document.querySelectorAll('.record-checkbox').length;
+          const checked = document.querySelectorAll('.record-checkbox:checked').length;
+          headerCheckbox.checked = (total === checked && total > 0);
+          selectAllCheckbox.checked = headerCheckbox.checked;
+        });
+      });
+
+      // action listeners
+      document.querySelectorAll('.detail-btn').forEach(btn => btn.addEventListener('click', () => showDetailModal(btn.dataset.id)));
+      document.querySelectorAll('.history-btn').forEach(btn => btn.addEventListener('click', () => showContactHistory(btn.dataset.id)));
+
+      if (p.canEdit) {
+        document.querySelectorAll('.edit-btn').forEach(btn => btn.addEventListener('click', () => editRecord(btn.dataset.id)));
+        document.querySelectorAll('.remark-btn').forEach(btn => btn.addEventListener('click', () => showRemarkModal(btn.dataset.id)));
+      }
+
+      if (p.canDelete) {
+        document.querySelectorAll('.delete-btn').forEach(btn => btn.addEventListener('click', async () => {
+          if (confirm('Are you sure you want to delete this record?')) await deleteRecord(btn.dataset.id);
+        }));
+      }
+
+      if (p.canUpdateStatus) {
+        document.querySelectorAll('.status-btn').forEach(btn => btn.addEventListener('click', () => showStatusModal(btn.dataset.id)));
+      }
+    }
+
+    // ===== Export =====
+    exportBtn.addEventListener('click', () => {
+      const p = state.permissions || permissionsFromRole(state.currentUserRole);
+      if (!p.canExport) { alert('No permission to export.'); return; }
+
+      const startDate = exportStartDate.value;
+      const endDate = exportEndDate.value;
+      const status = exportStatus.value;
+      const supplier = exportSupplier.value;
+
+      let filtered = [...state.records];
+
+      if (startDate) filtered = filtered.filter(r => r.rpoDate >= startDate);
+      if (endDate) filtered = filtered.filter(r => r.rpoDate <= endDate);
+      if (supplier !== 'all') filtered = filtered.filter(r => r.supplierName === supplier);
+
+      if (status !== 'all') {
+        if (status === 'OVERDUE') {
+          const today = new Date();
+          filtered = filtered.filter(r => {
+            if (r.status !== 'PENDING') return false;
+            const d = new Date(r.rpoDate);
+            const days = Math.floor((today - d) / (1000 * 60 * 60 * 24));
+            return days > 50;
+          });
+        } else {
+          filtered = filtered.filter(r => r.status === status);
+        }
+      }
+
+      if (filtered.length === 0) { alert('No records found matching your criteria.'); return; }
+
+      generateExportContent(filtered, startDate, endDate, status, supplier);
+
+      setTimeout(() => window.print(), 500);
+    });
+
+    function generateExportContent(records, startDate, endDate, status, supplier) {
+      let content = `
+        <div class="print-header">
+          <h1 style="color:#2c3e50; margin-bottom:10px; font-size:24px;">RETURN TRACKING SYSTEM REPORT</h1>
+          <p style="color:#666; font-size:14px;">Generated on: ${new Date().toLocaleString()}</p>
+          <p style="color:#666; font-size:14px;">Generated by: ${state.currentUser} (${state.currentUserRole})</p>
+        </div>
+
+        <div class="print-info">
+          <div style="display:flex; justify-content:space-between; flex-wrap:wrap;">
+            <div style="flex:1; min-width:200px;">
+              <p><strong>Report Period (RPO Date):</strong></p>
+              <p>Start Date: ${startDate || 'Not specified'}</p>
+              <p>End Date: ${endDate || 'Not specified'}</p>
+            </div>
+            <div style="flex:1; min-width:200px;">
+              <p><strong>Filter Criteria:</strong></p>
+              <p>Status: ${status === 'all' ? 'All Statuses' : status}</p>
+              <p>Supplier: ${supplier === 'all' ? 'All Suppliers' : supplier}</p>
+              <p>Total Records: ${records.length}</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="print-section">
+          <h3 style="color:#2c3e50; border-bottom:1px solid #ddd; padding-bottom:5px;">Records List</h3>
+          <table class="print-table">
+            <thead><tr>
+              <th>RPO NUMBER</th>
+              <th>RPO DATE</th>
+              <th>SUPPLIER NAME</th>
+              <th>DEPARTMENT</th>
+              <th>CONTACT DATE</th>
+              <th>STATUS</th>
+              <th>ATTACHMENT</th>
+            </tr></thead>
+            <tbody>
+      `;
+
+      records.forEach(r => {
+        const latestContactDate = (r.contactDates && r.contactDates.length > 0) ? r.contactDates[r.contactDates.length - 1] : '-';
+        content += `
+          <tr>
+            <td>${r.rpoNumber}</td>
+            <td>${r.rpoDate}</td>
+            <td>${r.supplierName}</td>
+            <td>${r.departmentInCharge}</td>
+            <td>${latestContactDate}</td>
+            <td>${r.status}</td>
+            <td>${r.attachmentUrl ? 'Yes (link)' : '-'}</td>
+          </tr>
+        `;
+      });
+
+      content += `
+            </tbody>
+          </table>
+        </div>
+        <div style="margin-top:30px; padding-top:15px; border-top:2px solid #333; text-align:center;">
+          <p style="font-size:12px; color:#666;">
+            <strong>Report Generated by:</strong> Return Tracking System<br>
+            <strong>Print Date:</strong> ${new Date().toLocaleString()}<br>
+            <strong>Page:</strong> 1 of 1
+          </p>
+        </div>
+      `;
+
+      printSection.innerHTML = content;
+      printSection.style.display = 'block';
+    }
+
+    window.addEventListener('afterprint', () => {
+      printSection.style.display = 'none';
+      printSection.innerHTML = '';
+    });
+
+    // ===== Default UI init =====
+    // show login initially; onAuthStateChanged will switch if already signed in
+    showLogin();
+  </script>
+</body>
+</html>
