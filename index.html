@@ -1433,31 +1433,10 @@ backupPdfBtn.addEventListener("click", () => {
 
       generateExportContent(filtered, startDate, endDate, status, supplier);
 
-      setTimeout(() => previewPDF(), 100);
+      setTimeout(() => window.print(), 500);
     });
 
-  function previewPDF() {
-    const { jsPDF } = window.jspdf;
-    const doc = new jsPDF();
-    const content = document.getElementById("printSection");
-    doc.html(content, {
-      callback: function (doc) {
-        // 🔹 Create PDF blob
-        const pdfBlob = doc.output("blob");
-        // 🔹 Create preview URL
-        const url = URL.createObjectURL(pdfBlob);
-        // 🔹 Open in new tab / viewer
-        window.open(url, "_blank");
-      },
-      margin: 10,
-      autoPaging: "text",
-      x: 10,
-      y: 10,
-      width: 180
-    });
-  }
-  
-    function generateExportContent(records, startDate, endDate, status, supplier) {
+  function generateExportContent(records, startDate, endDate, status, supplier) {
     const now = new Date().toLocaleString();
     let content = `
     <div class="print-header">
@@ -1659,4 +1638,3 @@ function generateBackupPdfContent(records) {
   </script>
 </body>
 </html>
-
