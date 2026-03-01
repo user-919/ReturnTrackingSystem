@@ -1410,7 +1410,7 @@ backupPdfBtn.addEventListener("click", () => {
 
       if (startDate) filtered = filtered.filter(r => r.rpoDate >= startDate);
       if (endDate) filtered = filtered.filter(r => r.rpoDate <= endDate);
-      if (sendDate) {filtered = filtered.filter(r => r.rpoDate <= sendDate);}
+      if (sendDate) {filtered = filtered.filter(r => (r.sendAccountDate || "") === sendDate);}
       if (supplier !== 'all') filtered = filtered.filter(r => r.supplierName === supplier);
 
       if (status !== 'all') {
@@ -1635,3 +1635,4 @@ function generateBackupPdfContent(records) {
   </script>
 </body>
 </html>
+
