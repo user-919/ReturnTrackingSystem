@@ -275,7 +275,7 @@
           <label for="selectAllCheckbox">Select All</label>
           <div class="batch-actions">
             <button class="btn btn-primary btn-sm" id="batchStatusBtn">Update Status</button>
-            <button class="btn btn-secondary btn-sm" id="backupPdfBtn">Backup All (PDF)</button>
+            <button class="btn btn-secondary btn-sm" id="backupPdfBtn">Backup (PDF)</button>
             <button class="btn btn-danger btn-sm" id="batchDeleteBtn">Delete Selected</button>
           </div>
         </div>
@@ -312,6 +312,10 @@
             <div class="form-group">
               <label for="exportEndDate">End Date (RPO Date)</label>
               <input type="date" id="exportEndDate" />
+            </div>
+            <div class="form-group">
+              <label for="exportSendAccountDate">Send Account Date</label>
+              <input type="date" id="exportSendAccountDate" />
             </div>
             <div class="form-group">
               <label for="exportStatus">Status</label>
@@ -512,6 +516,7 @@
     const exportStartDate = document.getElementById('exportStartDate');
     const exportEndDate = document.getElementById('exportEndDate');
     const exportStatus = document.getElementById('exportStatus');
+    const exportSendAccountDate = document.getElementById('exportSendAccountDate');
 
     const supplierList = document.getElementById('supplierList');
     const deptList = document.getElementById('deptList');
@@ -607,6 +612,12 @@ backupPdfBtn.addEventListener("click", () => {
     // ===== Helper =====
     const todayISO = () => new Date().toISOString().split("T")[0];
     const safeText = (s) => (s ?? "").toString();
+    function setSelected(id, checked) {
+      const idx = state.selectedRecordIds.indexOf(id);
+      if (checked && idx === -1) state.selectedRecordIds.push(id);
+      if (!checked && idx !== -1) state.selectedRecordIds.splice(idx, 1);
+    }
+
 
     // ===== UI Show/Hide =====
     function showApp() {
@@ -768,7 +779,7 @@ backupPdfBtn.addEventListener("click", () => {
             attachmentUrl: safeText(r.attachmentUrl || ""),
             returnedDate: r.returnedDate || null,
             sendAccountDate: r.sendAccountDate || null,
-            enteredBy: safeText(r.enteredBy || ""),
+            enteredBy: safeText(state.currentUserRole || ""),
             entryDate: r.entryDate || null,
             updatedDate: r.updatedDate || null,
           });
@@ -873,7 +884,7 @@ backupPdfBtn.addEventListener("click", () => {
             attachmentUrl: attachmentUrl || "",
             returnedDate: null,
             sendAccountDate: null,
-            enteredBy: state.currentUser || "",
+            enteredBy: state.currentUserRole || "",
             entryDate: serverTimestamp(),
             updatedDate: serverTimestamp(),
           });
@@ -903,15 +914,23 @@ backupPdfBtn.addEventListener("click", () => {
 
     // ===== Checkbox selection =====
     selectAllCheckbox.addEventListener('change', function() {
-      document.querySelectorAll('.record-checkbox').forEach(cb => cb.checked = this.checked);
+      const checkboxes = document.querySelectorAll('.record-checkbox');
+      checkboxes.forEach(cb => {
+        cb.checked = this.checked;
+        setSelected(cb.getAttribute("data-id"), this.checked);
+      });
+      
       headerCheckbox.checked = this.checked;
-      updateSelectedIds();
     });
 
     headerCheckbox.addEventListener('change', function() {
       selectAllCheckbox.checked = this.checked;
-      document.querySelectorAll('.record-checkbox').forEach(cb => cb.checked = this.checked);
-      updateSelectedIds();
+      
+      const checkboxes = document.querySelectorAll('.record-checkbox');
+      checkboxes.forEach(cb => {
+        cb.checked = this.checked;
+        setSelected(cb.getAttribute("data-id"), this.checked);
+      });
     });
 
     function updateSelectedIds() {
@@ -1325,8 +1344,10 @@ backupPdfBtn.addEventListener("click", () => {
         if (record.contactDates && record.contactDates.length > 0) actionsHtml += `<button class="btn btn-secondary btn-sm history-btn" data-id="${record.id}">History</button>`;
         actionsHtml += `</div>`;
 
+        const isChecked = state.selectedRecordIds.includes(record.id);
+
         row.innerHTML = `
-          <td class="checkbox-column"><input type="checkbox" class="record-checkbox" data-id="${record.id}"></td>
+          <td class="checkbox-column"><input type="checkbox" class="record-checkbox" data-id="${record.id}" ${isChecked ? "checked" : ""}></td>
           <td>${record.rpoNumber}</td>
           <td>${record.rpoDate}</td>
           <td>${record.supplierName}</td>
@@ -1343,10 +1364,13 @@ backupPdfBtn.addEventListener("click", () => {
       // checkbox listeners
       document.querySelectorAll('.record-checkbox').forEach(cb => {
         cb.addEventListener('change', () => {
-          updateSelectedIds();
-          const total = document.querySelectorAll('.record-checkbox').length;
-          const checked = document.querySelectorAll('.record-checkbox:checked').length;
-          headerCheckbox.checked = (total === checked && total > 0);
+          const id = cb.getAttribute("data-id");
+          setSelected(id, cb.checked);
+          
+          // Update header checkbox state based on VISIBLE rows only
+          const visible = document.querySelectorAll('.record-checkbox');
+          const checked = document.querySelectorAll('.record-checkbox:checked');
+          headerCheckbox.checked = (visible.length > 0 && visible.length === checked.length);
           selectAllCheckbox.checked = headerCheckbox.checked;
         });
       });
@@ -1380,11 +1404,13 @@ backupPdfBtn.addEventListener("click", () => {
       const endDate = exportEndDate.value;
       const status = exportStatus.value;
       const supplier = exportSupplier.value;
+      const sendDate = exportSendAccountDate.value;
 
       let filtered = [...state.records];
 
       if (startDate) filtered = filtered.filter(r => r.rpoDate >= startDate);
       if (endDate) filtered = filtered.filter(r => r.rpoDate <= endDate);
+      if (sendDate) {filtered = filtered.filter(r => r.rpoDate <= sendDate);}
       if (supplier !== 'all') filtered = filtered.filter(r => r.supplierName === supplier);
 
       if (status !== 'all') {
@@ -1608,6 +1634,4 @@ function generateBackupPdfContent(records) {
     showLogin();
   </script>
 </body>
-
 </html>
-
